@@ -18,7 +18,7 @@ void MyServer::AddWorkForAccept(TW_UserData* ap_user) //함수 재정의
 {
 	
 	CString str;
-	str.Format(L"%s에서 새로운사용자가 접속했습니다 !", ap_user->GetIP());
+	str.Format(L"%s에서 새로운사용자가 접속했습니다 !", ap_user->GetIP()); //클라이언트가 접속하면 리스트박스에 해당 문자열이 추가된다
 	mp_parent->AddEventString(str); //사용자를 IP 를 얻을수있으며 리스트박스에 추가를 할수있다 
 
 }
@@ -26,23 +26,24 @@ void MyServer::AddWorkForAccept(TW_UserData* ap_user) //함수 재정의
 void MyServer::AddWorkForCloseUser(TW_UserData* ap_user, int a_error_code)
 {
 	CString str;
-	str.Format(L"%s에서 새로운사용자가 해제했습니다 !", ap_user->GetIP());
+	str.Format(L"%s에서 새로운사용자가 해제했습니다 !", ap_user->GetIP()); //클라이언트가 접속을 끊으면 리스트박스에 해당 문자열이 추가된다
 	mp_parent->AddEventString(str); //사용자를 IP 를 얻을수있으며 리스트박스에 추가를 할수있다
 }
 
 int  MyServer::ProcessRecvData(SOCKET ah_socket, unsigned char a_msg_id, char* ap_recv_data, BS a_body_size)
 {
 	TW_UserData* p_user = (TW_UserData*)FindUserData(ah_socket); //유저데이터 주소를 볼수있다 
-	if (a_msg_id == NM_CHAT_DATA) {//클라이언트에서 채팅데이터 를 받기 위함
+	if (a_msg_id == NM_CHAT_DATA) {//클라이언트에서  수신된 데이터가 채팅 데이터인 경우
 		CString str;
-		str.Format(L"%s : %s ", p_user->GetIP(), (wchar_t*)ap_recv_data);
-		mp_parent->AddEventString(str);
+		str.Format(L"%s : %s ", p_user->GetIP(), (wchar_t*)ap_recv_data); // 구성된 문자열을 리스트 박스에 추가한다.
+
+		mp_parent->AddEventString(str); // 서버에 접속 가능한 클라이언트 수를 얻는다.
 
 		for (int i = 0; i < m_max_user_count; i++) {
-			// 현재 사용자가 접속 상태인지 확인한다.
+			// 클라이언트가 접속 상태인지 확인한다.
 			if (mp_user_list[i]->GetHandle() != -1) { // 0xFFFFFFFF
 				SendFrameData(mp_user_list[i]->GetHandle(), NM_CHAT_DATA, (const char*)(const wchar_t*)str, (str.GetLength() + 1) * 2);
-			}
+			}  // 클라이언트가 접속 상태라면 채팅 정보를 전송한다.
 		}
 
 
@@ -101,8 +102,9 @@ BEGIN_MESSAGE_MAP(CserverDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_MESSAGE(25001, &CserverDlg::OnAcceptUser)
-	ON_MESSAGE(25002, &CserverDlg::OnReadAndClose)
+	ON_MESSAGE(25001, &CserverDlg::OnAcceptUser)  // 새로운 클라이언트가 접속했을 때 발생하는 메시지를 처리한다.
+	ON_MESSAGE(25002, &CserverDlg::OnReadAndClose) // 접속한 클라이언트가 데이터를 전송하거나 접속을 해제할 때 나 발생하는 메시지를 처리한다.
+		                            
 END_MESSAGE_MAP()
 
 
@@ -137,8 +139,8 @@ BOOL CserverDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 큰 아이콘을 설정합니다.
 	SetIcon(m_hIcon, FALSE);		// 작은 아이콘을 설정합니다.
 
-	m_server.StartServer(L"192.168.219.104",50000, m_hWnd);//실행 서버아이피 와 포트 설정 
-	AddEventString(L"채팅서버 서비스를 시작합니다 "); //실행하면 리스트박스에 메세지 발생
+	m_server.StartServer(L"192.168.219.104",50000, m_hWnd); //실행 서버아이피 와 포트 설정 
+	AddEventString(L"채팅서버 서비스를 시작합니다 "); //실행하면 리스트박스에 해당 메세지가 추가된다 
 	
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
 
@@ -194,14 +196,14 @@ HCURSOR CserverDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+void CserverDlg::AddEventString(const wchar_t* ap_string) 
 //자기가 출력하고싶은 정보가있으면 대화상자에 AddEventString 호출을 하고문자를 사용하면 대화상자에 리스트박스에 저장이된다
-void CserverDlg::AddEventString(const wchar_t* ap_string) //멤버함수
 {
 	int index = m_event_list.InsertString(-1, ap_string);
 	m_event_list.SetCurSel(index);
 }
 
-afx_msg LRESULT CserverDlg::OnAcceptUser(WPARAM wParam, LPARAM lParam)
+afx_msg LRESULT CserverDlg::OnAcceptUser(WPARAM wParam, LPARAM lParam) // 새로운 클라이언트가 접속했을 때 발생하는 메시지를 처리한다.
 {
 	m_server.ProcessToAccept(wParam, lParam);
 	return 0;
@@ -209,7 +211,7 @@ afx_msg LRESULT CserverDlg::OnAcceptUser(WPARAM wParam, LPARAM lParam)
 
 
 
-afx_msg LRESULT CserverDlg::OnReadAndClose(WPARAM wParam, LPARAM lParam)
+afx_msg LRESULT CserverDlg::OnReadAndClose(WPARAM wParam, LPARAM lParam) // 접속한 클라이언트가 데이터를 전송하거나 접속을 해제할 때 나 발생하는 메시지를 처리한다.
 {
 	m_server.ProcessClientEvent(wParam,lParam);
 	return 0;
