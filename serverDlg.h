@@ -22,7 +22,7 @@ public:
 	virtual void AddWorkForAccept(TW_UserData* ap_user);
 	virtual void AddWorkForCloseUser(TW_UserData* ap_user, int a_error_code);
 	virtual int  ProcessRecvData(SOCKET ah_socket, unsigned char a_msg_id, char* ap_recv_data, BS a_body_size);
-};
+}; //클라이언트 데이터가 수신 되명 해당 함수가 호출이 된다.
 
 
 
